@@ -102,7 +102,7 @@ async function run() {
 
         core.info(`downloading ${buildURL}`);
         const downloaded = await tc.downloadTool(buildURL, installationPath);
-        core.debug(`successfully downloaded ${buildURL} to ${downloaded}`);
+        core.info(`successfully downloaded ${buildURL} to ${downloaded}`);
 
         await fs.promises.chmod(installationPath, 0o755);
 
@@ -112,9 +112,9 @@ async function run() {
           semver.clean(tag_name) || tag_name.substring(1),
           os.arch()
         );
+        core.info(`secretshare setup complete`);
       }
     }
-
 
     const publickey = core.getInput("publickey");
     const msg = core.getInput("msg");
