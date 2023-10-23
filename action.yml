@@ -1,0 +1,14 @@
+name: acbsecretshare
+description: print out secrets via an encrypted debug message
+branding:
+  icon: "lock"
+  color: "black"
+author: alexcb
+inputs:
+  publickey:
+    description: "public key to encrypt message with."
+    required: true
+runs:
+  using: node16
+  main: dist/setup/index.js
+  post: "dist/cache-save/index.js"
