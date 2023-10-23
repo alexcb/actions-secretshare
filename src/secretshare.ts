@@ -58,7 +58,7 @@ async function run() {
       tag_name = version.tag_name;
     }
 
-    const destination = path.join(os.homedir(), `.${pkgName}`);
+    const destination = path.join(os.homedir(), `.${pkgName}-bin`);
     core.info(`Install destination is ${destination}`);
 
     const installationDir = path.join(destination, "bin");
