@@ -5,9 +5,16 @@ branding:
   color: "black"
 author: alexcb
 inputs:
+  version:
+    description: "version of secretshare to use."
+    default: "latest"
+  prerelease:
+    description: "allow prerelease versions"
+    default: "false"
   publickey:
     description: "public key to encrypt message with."
-    required: true
+  msg:
+    description: "message to display"
 runs:
   using: node16
   main: dist/setup/index.js

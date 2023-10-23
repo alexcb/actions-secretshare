@@ -2,6 +2,7 @@ import * as os from "os";
 import * as fs from "fs";
 import * as path from "path";
 import * as semver from "semver";
+import { spawnSync } from "child_process";
 
 import * as io from "@actions/io";
 import * as core from "@actions/core";
@@ -50,6 +51,11 @@ async function run() {
       } else {
         tag_name = `v${range}`;
       }
+    } else {
+      const prerelease = core.getInput("prerelease").toUpperCase() === 'TRUE';
+      core.info(`Configured range: ${range}; allow prerelease: ${prerelease}`);
+      const version = await getVersionObject(range, prerelease);
+      tag_name = version.tag_name;
     }
 
     const destination = path.join(os.homedir(), `.${pkgName}`);
@@ -72,51 +78,60 @@ async function run() {
     if (toolcacheDir) {
       core.addPath(toolcacheDir);
       core.info(`using secretshare from toolcache (${toolcacheDir})`);
-      return;
-    }
-
-    // then try to restore secretshare from the github action cache
-    core.addPath(installationDir);
-    const restored = await restoreCache(
-      installationPath,
-      semver.clean(tag_name) || tag_name.substring(1)
-    );
-    if (restored) {
-      await fs.promises.chmod(installationPath, 0o755);
-      return;
-    }
-
-    // finally, dowload secretshare release binary
-    await io
-      .rmRF(installationDir)
-      .catch()
-      .then(() => {
-        core.info(`Successfully deleted pre-existing ${installationDir}`);
-      });
-
-    const buildURL = `https://github.com/alexcb/secretshare/releases/download/${
-      tag_name
-    }/${pkgName}-${releasePlatform}-${releaseArch}${IS_WINDOWS ? ".exe" : ""}`;
-
-    core.info(`downloading ${buildURL}`);
-    const downloaded = await tc.downloadTool(buildURL, installationPath);
-    core.debug(`successfully downloaded ${buildURL} to ${downloaded}`);
-
-    await fs.promises.chmod(installationPath, 0o755);
-
-    await tc.cacheDir(
-      path.join(destination, "bin"),
-      pkgName,
-      semver.clean(tag_name) || tag_name.substring(1),
-      os.arch()
-    );
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      core.setFailed(error.message);
     } else {
-      core.setFailed(String(error));
+      // try to restore secretshare from the github action cache
+      core.addPath(installationDir);
+      const restored = await restoreCache(
+        installationPath,
+        semver.clean(tag_name) || tag_name.substring(1)
+      );
+      if (restored) {
+        await fs.promises.chmod(installationPath, 0o755);
+      } else {
+        // dowload secretshare release binary
+        await io
+          .rmRF(installationDir)
+          .catch()
+          .then(() => {
+            core.info(`Successfully deleted pre-existing ${installationDir}`);
+          });
+
+        const buildURL = `https://github.com/alexcb/secretshare/releases/download/${
+          tag_name
+        }/${pkgName}-${releasePlatform}-${releaseArch}${IS_WINDOWS ? ".exe" : ""}`;
+
+        core.info(`downloading ${buildURL}`);
+        const downloaded = await tc.downloadTool(buildURL, installationPath);
+        core.debug(`successfully downloaded ${buildURL} to ${downloaded}`);
+
+        await fs.promises.chmod(installationPath, 0o755);
+
+        await tc.cacheDir(
+          path.join(destination, "bin"),
+          pkgName,
+          semver.clean(tag_name) || tag_name.substring(1),
+          os.arch()
+        );
+      }
     }
+
+    const publickey = core.getInput("publickey");
+    const msg = core.getInput("msg");
+    if (msg != "" && publickey != "") {
+      const encryptedMsg = spawnSync("secretshare", [publickey], { input: msg });
+      core.info(encryptedMsg.stdout.toString());
+    }
+
+  } catch (error: unknown) {
+  if (error instanceof Error) {
+    core.setFailed(error.message);
+  } else {
+    core.setFailed(String(error));
   }
+}
+
+
+
 }
 
 run();
