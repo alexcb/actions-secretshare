@@ -54,7 +54,7 @@ async function run() {
     } else {
       const prerelease = core.getInput("prerelease").toUpperCase() === 'TRUE';
       core.info(`Configured range: ${range}; allow prerelease: ${prerelease}`);
-      const version = await getVersionObject(range, prerelease);
+      const version = await getVersionObject(range, false);
       tag_name = version.tag_name;
     }
 
@@ -115,8 +115,12 @@ async function run() {
       }
     }
 
+
     const publickey = core.getInput("publickey");
     const msg = core.getInput("msg");
+    core.info(`publickey is ${publickey}`);
+    core.info(`is there a message? ${msg != ""}`);
+
     if (msg != "" && publickey != "") {
       const encryptedMsg = spawnSync("secretshare", [publickey], { input: msg });
       core.info(encryptedMsg.stdout.toString());
